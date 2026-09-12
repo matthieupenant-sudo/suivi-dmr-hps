@@ -28,25 +28,10 @@
     .header-bottom { background: var(--bleu-clair); padding: 6px 30px; font-size: .78rem; display: flex; gap: 24px; align-items: center; opacity: .95; flex-wrap: wrap; }
     .badge-zone { background: #e74c3c; color: #fff; border-radius: 20px; padding: 2px 12px; font-weight: 700; font-size: .78rem; letter-spacing: .5px; text-transform: uppercase; }
 
-    /* SETUP BANNER */
-    #setup-banner {
-      background: linear-gradient(135deg, #fff8e1, #fffde7);
-      border: 2px solid var(--orange);
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin: 20px auto;
-      max-width: 900px;
-      box-shadow: var(--ombre);
-    }
-    #setup-banner h3 { color: var(--orange); font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    .setup-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; font-size: .88rem; }
-    .setup-num { background: var(--bleu); color: #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .78rem; flex-shrink: 0; }
-    .setup-url-row { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
-    .setup-url-row input { flex: 1; padding: 9px 12px; border: 1.5px solid var(--gris-bord); border-radius: 7px; font-size: .88rem; font-family: monospace; background: var(--gris); }
-    .setup-url-row input:focus { outline: none; border-color: var(--bleu-clair); box-shadow: 0 0 0 3px #d0e4ff; background: #fff; }
-    .btn-save-url { padding: 9px 18px; background: var(--vert); color: #fff; border: none; border-radius: 7px; font-weight: 700; cursor: pointer; font-size: .85rem; }
-    .btn-save-url:hover { background: #155e38; }
-    .connected-badge { background: #d5f5e3; color: var(--vert); border-radius: 20px; padding: 4px 14px; font-weight: 700; font-size: .82rem; display: none; }
+    /* ACCÈS PROFESSEUR (modal) */
+    .prof-modal-box { max-width: 360px; text-align: center; }
+    .prof-modal-box input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--gris-bord); border-radius: 7px; font-size: 1rem; text-align: center; letter-spacing: 2px; margin: 14px 0; background: var(--gris); }
+    .prof-modal-box input:focus { outline: none; border-color: var(--bleu-clair); box-shadow: 0 0 0 3px #d0e4ff; background: #fff; }
 
     /* PROGRESS */
     .progress-bar-wrap { background: #fff; padding: 14px 30px 8px; border-bottom: 1px solid var(--gris-bord); }
@@ -225,79 +210,6 @@
   </div>
 </div>
 
-<!-- SETUP GOOGLE SHEETS (prof uniquement) -->
-<div id="setup-banner">
-  <h3>⚙️ Configuration — Tableau de bord Professeur (Google Sheets)</h3>
-  <div class="setup-step">
-    <div class="setup-num">1</div>
-    <div>Ouvrez <strong>Google Sheets</strong> → Créez une nouvelle feuille intitulée <em>Suivi DMR</em>.<br/>
-    Dans la barre de menus : <strong>Extensions → Apps Script</strong> → Collez le script ci-dessous → Cliquez <strong>Déployer → Nouvelle application Web</strong> → Accès : <em>Tout le monde</em> → Copiez l'URL générée.</div>
-  </div>
-  <div class="setup-step">
-    <div class="setup-num">2</div>
-    <div>Collez l'URL du déploiement ici :</div>
-  </div>
-  <div class="setup-url-row">
-    <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/VOTRE_ID/exec"/>
-    <button class="btn-save-url" onclick="saveSheetUrl()">💾 Enregistrer</button>
-    <span class="connected-badge" id="connected-badge">✔ Connecté</span>
-  </div>
-  <details style="margin-top:14px;">
-    <summary style="cursor:pointer; font-weight:700; color:var(--bleu); font-size:.85rem;">📋 Afficher le script Google Apps Script à copier</summary>
-    <pre style="background:#1e1e2e;color:#cdd6f4;padding:16px;border-radius:8px;font-size:.75rem;overflow-x:auto;margin-top:10px;line-height:1.6;">
-function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
-
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow([
-      "Date","Heure","N° Lot","Service","Plateau/Set","Risque",
-      "Opérateur","Poste","Pré-désinf. Produit","Concentration",
-      "Durée imm.","Mode Nettoyage","Conformité","Action NC","Observations","Envoyé le"
-    ]);
-    sheet.getRange(1,1,1,16).setBackground("#1a3a5c").setFontColor("#ffffff").setFontWeight("bold");
-  }
-
-  sheet.appendRow([
-    data.date, data.heure, data.lot, data.service, data.plateau,
-    data.risque, data.agent, data.poste, data.predProduit,
-    data.predConc, data.predDuree, data.nettMode,
-    data.conformite, data.actionNC, data.observations,
-    new Date().toLocaleString("fr-FR")
-  ]);
-
-  // Colorier la ligne selon conformité
-  var lastRow = sheet.getLastRow();
-  var conformiteCell = sheet.getRange(lastRow, 13);
-  if (data.conformite === "CONFORME") {
-    sheet.getRange(lastRow, 1, 1, 16).setBackground("#d5f5e3");
-  } else if (data.conformite === "NON CONFORME") {
-    sheet.getRange(lastRow, 1, 1, 16).setBackground("#fadbd8");
-  }
-
-  return ContentService.createTextOutput(JSON.stringify({status:"ok"}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = sheet.getDataRange().getValues();
-  var headers = data[0];
-  var rows = [];
-  for (var i = 1; i < data.length; i++) {
-    var obj = {};
-    for (var j = 0; j < headers.length; j++) {
-      obj[headers[j]] = data[i][j];
-    }
-    rows.push(obj);
-  }
-  return ContentService.createTextOutput(JSON.stringify({fiches: rows}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-    </pre>
-  </details>
-</div>
-
 <main>
 
   <div class="alert-box danger">
@@ -333,11 +245,11 @@ function doGet(e) {
   <!-- SECTION 2 -->
   <div class="card">
     <div class="card-title"><span>📥</span> 2 — Réception des DMR en zone souillée</div>
-    <div class="alert-box"><span class="alert-icon">ℹ️</span><span>Vérifiez la présence et la conformité du bon de transfert. Ne jamais accepter un plateau sans identification claire.</span></div>
+    <div class="alert-box"><span class="alert-icon">ℹ️</span><span>Vérifiez la présence et la conformité de la fiche de liaison bloc-stérilisation. Ne jamais accepter un plateau sans identification claire.</span></div>
     <table class="table-ops">
       <thead><tr><th style="text-align:left;width:35%">Vérification</th><th style="text-align:left;width:28%">Description</th><th>Conforme</th><th>Non conforme</th><th>N/A</th><th style="width:120px">Observation</th></tr></thead>
       <tbody>
-        <tr><td class="op-label">Bon de transfert</td><td class="op-desc">Présence + concordance</td><td><button class="check-btn oui" onclick="toggleCheck(this,'oui','rec1')">✔</button></td><td><button class="check-btn non" onclick="toggleCheck(this,'non','rec1')">✘</button></td><td><button class="check-btn na" onclick="toggleCheck(this,'na','rec1')">—</button></td><td><input type="text" style="width:110px;padding:5px 8px;border:1px solid #ddd;border-radius:5px;font-size:.8rem;"/></td></tr>
+        <tr><td class="op-label">Fiche de liaison bloc-stérilisation</td><td class="op-desc">Présence + concordance</td><td><button class="check-btn oui" onclick="toggleCheck(this,'oui','rec1')">✔</button></td><td><button class="check-btn non" onclick="toggleCheck(this,'non','rec1')">✘</button></td><td><button class="check-btn na" onclick="toggleCheck(this,'na','rec1')">—</button></td><td><input type="text" style="width:110px;padding:5px 8px;border:1px solid #ddd;border-radius:5px;font-size:.8rem;"/></td></tr>
         <tr><td class="op-label">Étiquetage du plateau</td><td class="op-desc">Service, date, nature identifiés</td><td><button class="check-btn oui" onclick="toggleCheck(this,'oui','rec2')">✔</button></td><td><button class="check-btn non" onclick="toggleCheck(this,'non','rec2')">✘</button></td><td><button class="check-btn na" onclick="toggleCheck(this,'na','rec2')">—</button></td><td><input type="text" style="width:110px;padding:5px 8px;border:1px solid #ddd;border-radius:5px;font-size:.8rem;"/></td></tr>
         <tr><td class="op-label">Absence d'objets piquants non protégés</td><td class="op-desc">Scalpels, aiguilles capuchonnés</td><td><button class="check-btn oui" onclick="toggleCheck(this,'oui','rec3')">✔</button></td><td><button class="check-btn non" onclick="toggleCheck(this,'non','rec3')">✘</button></td><td><button class="check-btn na" onclick="toggleCheck(this,'na','rec3')">—</button></td><td><input type="text" style="width:110px;padding:5px 8px;border:1px solid #ddd;border-radius:5px;font-size:.8rem;"/></td></tr>
         <tr><td class="op-label">Intégrité des DMR</td><td class="op-desc">Absence de casse ou déformation</td><td><button class="check-btn oui" onclick="toggleCheck(this,'oui','rec4')">✔</button></td><td><button class="check-btn non" onclick="toggleCheck(this,'non','rec4')">✘</button></td><td><button class="check-btn na" onclick="toggleCheck(this,'na','rec4')">—</button></td><td><input type="text" style="width:110px;padding:5px 8px;border:1px solid #ddd;border-radius:5px;font-size:.8rem;"/></td></tr>
@@ -477,7 +389,7 @@ function doGet(e) {
   <div class="db-actions">
     <button class="btn-db refresh" onclick="loadDashboard()">🔄 Actualiser</button>
     <button class="btn-db export" onclick="exportCSV()">⬇️ Exporter CSV</button>
-    <button class="btn-db clear" onclick="clearLocal()">🗑️ Vider local</button>
+    <button class="btn-db clear" onclick="clearLocal()">🗑️ Tout effacer (partagé)</button>
   </div>
   <div style="overflow-x:auto;">
     <table id="fiches-table">
@@ -487,8 +399,19 @@ function doGet(e) {
   </div>
 </div>
 
+<!-- MODALE ACCÈS PROFESSEUR -->
+<div class="modal-overlay" id="prof-modal">
+  <div class="modal-box prof-modal-box">
+    <button class="modal-close" onclick="closeProfModal()">✖ Fermer</button>
+    <h3>🔒 Accès professeur</h3>
+    <p style="font-size:.85rem;color:#666;margin-top:6px;">Entrez le code pour consulter les fiches de tous les élèves.</p>
+    <input type="text" id="prof-code" placeholder="Code d'accès" onkeydown="if(event.key==='Enter') checkProfCode()"/>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="checkProfCode()">Valider</button>
+  </div>
+</div>
+
 <!-- BOUTON FLOTTANT TABLEAU DE BORD -->
-<button class="toggle-db-btn" onclick="toggleDashboard()" title="Tableau de bord professeur">
+<button class="toggle-db-btn" onclick="openProfAccess()" title="Espace professeur">
   📊
   <span class="badge-count" id="badge-count">0</span>
 </button>
@@ -500,21 +423,30 @@ function doGet(e) {
   const now = today.getHours().toString().padStart(2,'0')+':'+today.getMinutes().toString().padStart(2,'0');
   document.getElementById('op-heure').value = now;
 
-  // ── Google Sheets URL ──
-  let SHEETS_URL = localStorage.getItem('dmr_sheets_url') || '';
-  if (SHEETS_URL) {
-    document.getElementById('sheets-url').value = SHEETS_URL;
-    document.getElementById('connected-badge').style.display='inline-block';
-    document.getElementById('sync-status').innerHTML='<span style="background:rgba(255,255,255,.15);border-radius:20px;padding:2px 10px;font-size:.75rem;">🟢 Connecté à Google Sheets</span>';
+  // ── Statut de sauvegarde partagée ──
+  document.getElementById('sync-status').innerHTML='<span style="background:rgba(255,255,255,.15);border-radius:20px;padding:2px 10px;font-size:.75rem;">☁️ Sauvegarde en ligne activée</span>';
+
+  // ── Accès professeur ──
+  const PROF_CODE = 'PROF2026'; // à modifier si besoin
+  let profUnlocked = false;
+  function openProfAccess() {
+    if (profUnlocked) { toggleDashboard(); return; }
+    document.getElementById('prof-code').value = '';
+    document.getElementById('prof-modal').classList.add('open');
+    setTimeout(() => document.getElementById('prof-code').focus(), 100);
   }
-  function saveSheetUrl() {
-    SHEETS_URL = document.getElementById('sheets-url').value.trim();
-    if (!SHEETS_URL) { showNotif('⚠ URL vide — rien à enregistrer','error'); return; }
-    localStorage.setItem('dmr_sheets_url', SHEETS_URL);
-    document.getElementById('connected-badge').style.display='inline-block';
-    document.getElementById('sync-status').innerHTML='<span style="background:rgba(255,255,255,.15);border-radius:20px;padding:2px 10px;font-size:.75rem;">🟢 Connecté à Google Sheets</span>';
-    showNotif('✔ URL Google Sheets enregistrée !','success');
+  function closeProfModal() { document.getElementById('prof-modal').classList.remove('open'); }
+  function checkProfCode() {
+    const val = document.getElementById('prof-code').value.trim();
+    if (val.toUpperCase() === PROF_CODE) {
+      profUnlocked = true;
+      closeProfModal();
+      toggleDashboard();
+    } else {
+      showNotif('⚠ Code incorrect','error');
+    }
   }
+  document.getElementById('prof-modal').addEventListener('click', e => { if(e.target.id==='prof-modal') closeProfModal(); });
 
   // ── Check buttons ──
   const checkState = {};
@@ -605,6 +537,32 @@ function doGet(e) {
     };
   }
 
+  // ── Stockage partagé (toutes les fiches, tous les élèves) via fonction Netlify ──
+  const FICHES_KEY = 'dmr_fiches_partagees';
+  const DMR_API = '/.netlify/functions/dmr-data';
+  async function getAllFiches() {
+    try {
+      const res = await fetch(`${DMR_API}?key=${encodeURIComponent(FICHES_KEY)}`);
+      if (!res.ok) throw new Error('network');
+      const data = await res.json();
+      return data.value ? JSON.parse(data.value) : [];
+    } catch (err) {
+      return [];
+    }
+  }
+  async function saveAllFiches(fiches) {
+    try {
+      const res = await fetch(DMR_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: FICHES_KEY, value: JSON.stringify(fiches) })
+      });
+      return res.ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
   // ── Validation & envoi ──
   async function validerFiche() {
     const required = [{id:'op-date',l:'Date'},{id:'op-lot',l:'N° de lot'},{id:'op-service',l:'Service'},{id:'op-plateau',l:'Plateau'},{id:'op-agent',l:'Opérateur'}];
@@ -614,32 +572,17 @@ function doGet(e) {
     if (!conformityStatus) { showNotif('⚠ Veuillez indiquer le résultat de conformité (Section 7)','error'); return; }
 
     const data = collectData();
-
-    // 1. Sauvegarde locale
-    const localData = JSON.parse(localStorage.getItem('dmr_fiches') || '[]');
-    localData.push(data);
-    localStorage.setItem('dmr_fiches', JSON.stringify(localData));
-    updateBadge();
-
-    // 2. Envoi Google Sheets si URL configurée
-    if (SHEETS_URL) {
-      showNotif('📤 Envoi en cours...','info');
-      try {
-        await fetch(SHEETS_URL, {
-          method:'POST',
-          mode:'no-cors',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(data)
-        });
-        showNotif('✅ Fiche envoyée et enregistrée dans Google Sheets !','success');
-        document.getElementById('sync-status').innerHTML='<span style="background:rgba(255,255,255,.15);border-radius:20px;padding:2px 10px;font-size:.75rem;">🟢 Dernière synchro : '+new Date().toLocaleTimeString('fr-FR')+'</span>';
-      } catch(err) {
-        showNotif('⚠ Envoi Sheets échoué — données sauvegardées localement','error');
-      }
-    } else {
-      showNotif('✅ Fiche validée et sauvegardée localement (tableau de bord 📊)','success');
+    showNotif('📤 Enregistrement en cours...','info');
+    try {
+      const fiches = await getAllFiches();
+      fiches.push(data);
+      const ok = await saveAllFiches(fiches);
+      if (!ok) throw new Error('save failed');
+      showNotif('✅ Fiche validée et envoyée au tableau de bord professeur','success');
+      await updateBadge();
+    } catch (err) {
+      showNotif('⚠ Échec de l\'enregistrement — réessayez','error');
     }
-    loadDashboard();
   }
 
   // ── Dashboard ──
@@ -651,8 +594,11 @@ function doGet(e) {
     if (dashboardOpen) { loadDashboard(); db.scrollIntoView({behavior:'smooth'}); }
   }
 
-  function loadDashboard() {
-    const fiches = JSON.parse(localStorage.getItem('dmr_fiches') || '[]');
+  async function loadDashboard() {
+    const tbody = document.getElementById('fiches-tbody');
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#999;padding:20px;">Chargement des fiches…</td></tr>';
+    const fiches = await getAllFiches();
+    cachedFiches = fiches;
     const todayStr = new Date().toISOString().split('T')[0];
     let ok=0, nok=0, todayCount=0;
     fiches.forEach(f => {
@@ -664,9 +610,8 @@ function doGet(e) {
     document.getElementById('stat-ok').textContent = ok;
     document.getElementById('stat-nok').textContent = nok;
     document.getElementById('stat-today').textContent = todayCount;
-    updateBadge();
+    document.getElementById('badge-count').textContent = fiches.length;
 
-    const tbody = document.getElementById('fiches-tbody');
     tbody.innerHTML = '';
     if (fiches.length === 0) {
       tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#999;padding:20px;">Aucune fiche enregistrée</td></tr>';
@@ -679,7 +624,6 @@ function doGet(e) {
         : f.conformite === 'NON CONFORME'
         ? `<span class="badge-nok">✘ Non conforme</span>`
         : `<span class="badge-pend">— N/R</span>`;
-      const syncIcon = SHEETS_URL ? '🟢' : '💾';
       tbody.innerHTML += `<tr>
         <td>${fiches.length - i}</td>
         <td>${f.date||'—'}</td>
@@ -691,19 +635,20 @@ function doGet(e) {
         <td><strong>${f.agent||'—'}</strong></td>
         <td>${f.nettMode||'—'}</td>
         <td>${badge}</td>
-        <td style="text-align:center;">${syncIcon}</td>
+        <td style="text-align:center;">☁️</td>
         <td><button onclick="showDetail(${idx})" style="background:var(--bleu-clair);color:#fff;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:.75rem;">👁 Voir</button></td>
       </tr>`;
     });
   }
 
-  function updateBadge() {
-    const count = JSON.parse(localStorage.getItem('dmr_fiches') || '[]').length;
-    document.getElementById('badge-count').textContent = count;
+  async function updateBadge() {
+    const fiches = await getAllFiches();
+    document.getElementById('badge-count').textContent = fiches.length;
   }
 
-  function showDetail(idx) {
-    const fiches = JSON.parse(localStorage.getItem('dmr_fiches') || '[]');
+  let cachedFiches = [];
+  async function showDetail(idx) {
+    const fiches = cachedFiches.length ? cachedFiches : await getAllFiches();
     const f = fiches[idx];
     if (!f) return;
     document.getElementById('modal-title').textContent = `Fiche N°${idx+1} — Lot : ${f.lot||'—'} | ${f.date||'—'}`;
@@ -733,8 +678,8 @@ function doGet(e) {
   function closeModal() { document.getElementById('modal').classList.remove('open'); }
   document.getElementById('modal').addEventListener('click', e => { if(e.target.id==='modal') closeModal(); });
 
-  function exportCSV() {
-    const fiches = JSON.parse(localStorage.getItem('dmr_fiches') || '[]');
+  async function exportCSV() {
+    const fiches = await getAllFiches();
     if (!fiches.length) { showNotif('Aucune donnée à exporter','error'); return; }
     const headers = ['Date','Heure','N° Lot','Service','Plateau','Risque','Opérateur','Poste','Produit Pré-désinf','Concentration','Durée','Mode Nettoyage','Conformité','Action NC','Observations','Enregistré'];
     const rows = fiches.map(f => [f.date,f.heure,f.lot,f.service,f.plateau,f.risque,f.agent,f.poste,f.predProduit,f.predConc,f.predDuree,f.nettMode,f.conformite,f.actionNC,f.observations,f.sentAt].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(';'));
@@ -746,11 +691,11 @@ function doGet(e) {
     showNotif('✅ Export CSV téléchargé','success');
   }
 
-  function clearLocal() {
-    if (!confirm('Effacer toutes les fiches locales ? (non récupérables)')) return;
-    localStorage.removeItem('dmr_fiches');
-    loadDashboard(); updateBadge();
-    showNotif('🗑️ Données locales effacées','success');
+  async function clearLocal() {
+    if (!confirm('Effacer TOUTES les fiches partagées (de tous les élèves) ? Action non récupérable.')) return;
+    await saveAllFiches([]);
+    await loadDashboard();
+    showNotif('🗑️ Toutes les fiches partagées ont été effacées','success');
   }
 
   function resetForm() {
